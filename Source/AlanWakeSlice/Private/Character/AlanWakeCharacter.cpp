@@ -72,13 +72,18 @@ AAlanWakeCharacter::AAlanWakeCharacter()
 	//Custom Components
 	InventoryComp = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComponent"));
+	FlashlightComp = CreateDefaultSubobject<UFlashlightComponent>(TEXT("FlashlightComponent"));
+
 	
 	FlashlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FlashlightMesh"));
 	FlashlightMesh->SetupAttachment(GetMesh(), FName("FlashlightSocket")); 
 	FlashlightMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
-	FlashlightMeshLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("FlashlightMeshLight"));
-	FlashlightMeshLight->SetupAttachment(FlashlightMesh);
+	FlashlightInner = CreateDefaultSubobject<USpotLightComponent>(TEXT("FlashlightInner"));
+	FlashlightInner->SetupAttachment(FlashlightMesh);
+
+	FlashlightOuter = CreateDefaultSubobject<USpotLightComponent>(TEXT("FlashlightOuter"));
+	FlashlightOuter->SetupAttachment(FlashlightMesh);
 	
 
 }
@@ -92,14 +97,12 @@ void AAlanWakeCharacter::BeginPlay()
 		WeaponComp->Initialize(InventoryComp);
 	}
 	
-	if (FlashlightComp && FlashlightMeshLight)
+	if (FlashlightComp && FlashlightInner && FlashlightOuter)
 	{
-		FlashlightComp->SetupLight(FlashlightMeshLight);
+		FlashlightComp->SetupLights(FlashlightInner, FlashlightOuter);
+		FlashlightComp->SetCamera(FollowCamera);
 	}
 }
-
-
-
 
 void AAlanWakeCharacter::Tick(float DeltaSeconds)
 {

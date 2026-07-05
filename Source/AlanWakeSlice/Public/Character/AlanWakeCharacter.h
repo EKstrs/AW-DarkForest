@@ -61,7 +61,10 @@ public:
 	UStaticMeshComponent* FlashlightMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
-	USpotLightComponent* FlashlightMeshLight;
+	USpotLightComponent* FlashlightInner;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	USpotLightComponent* FlashlightOuter;
 
 	/** Equipped items*/
 

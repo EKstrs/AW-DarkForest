@@ -12,7 +12,11 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Animation/AnimInstance.h"
+#include "Components/FlashlightComponent.h"
+#include "Components/InventoryComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/SpotLightComponent.h"
+#include "Components/WeaponComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/DamageType.h"
@@ -64,137 +68,46 @@ AAlanWakeCharacter::AAlanWakeCharacter()
 	HandItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	HandItemMesh->SetVisibility(false);
 
-	//Default states
-	CurrentEquipState = EEquipState::Unarmed;
-	bHasThrowable = false;
+
+	//Custom Components
+	InventoryComp = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComponent"));
+	
+	FlashlightMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FlashlightMesh"));
+	FlashlightMesh->SetupAttachment(GetMesh(), FName("FlashlightSocket")); 
+	FlashlightMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	FlashlightMeshLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("FlashlightMeshLight"));
+	FlashlightMeshLight->SetupAttachment(FlashlightMesh);
+	
+
 }
 
 
 void AAlanWakeCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-}
-
-
-
-
-void AAlanWakeCharacter::EquipItem(EEquipState NewState)
-{
-	if (CurrentEquipState == NewState) return;
-
-	if (NewState == EEquipState::Throwable && !bHasThrowable) return;
-
-	PendingEquipState = NewState;
-	if (EquipMontage && GetMesh() && GetMesh()->GetAnimInstance())
+	if (WeaponComp && InventoryComp)
 	{
-		GetMesh()->GetAnimInstance()->Montage_Play(EquipMontage);
+		WeaponComp->Initialize(InventoryComp);
 	}
-	else
-	{
-		FinalizeEquip();
-	}
-}
-
-void AAlanWakeCharacter::FinalizeEquip()
-{
-	CurrentEquipState = PendingEquipState;
 	
-	OnEquipStateChangedDelegate.Broadcast(CurrentEquipState);
-}
-
-void AAlanWakeCharacter::ReleaseThrowable()
-{
-	if (!ThrowableClass) return;
-
-	FVector SpawnLocation = GetActorLocation() + (GetActorForwardVector() * 80.0f);
-	SpawnLocation.Z += 60.0f;
-
-	FRotator ThrowRotation = GetActorRotation();
-	if (FollowCamera)
+	if (FlashlightComp && FlashlightMeshLight)
 	{
-		ThrowRotation = FollowCamera->GetComponentRotation();
-		ThrowRotation.Pitch += 30.0f;
+		FlashlightComp->SetupLight(FlashlightMeshLight);
 	}
-
-	//Spawn parameters
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	GetWorld()->SpawnActor<AActor>(ThrowableClass, SpawnLocation, ThrowRotation, SpawnParams);
-
-	bHasThrowable = false;
-	ThrowableClass = nullptr;
-	bIsAiming = false;
-	EquipItem(EEquipState::Unarmed);
 }
+
+
+
 
 void AAlanWakeCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
-
-void AAlanWakeCharacter::NotifyControllerChanged()
-{
-	Super::NotifyControllerChanged();
-
-	// Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<
-			UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
-}
-
-void AAlanWakeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAlanWakeCharacter::Move);
-
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAlanWakeCharacter::Look);
-
-		//Crouching
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this,
-		                                   &AAlanWakeCharacter::ToggleCrouch);
-		
-		//Throw
-		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Started, this,
-		                                   &AAlanWakeCharacter::ThrowItem);
-
-		//Aim
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AAlanWakeCharacter::StartAim);
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AAlanWakeCharacter::StopAim);
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Canceled, this, &AAlanWakeCharacter::StopAim);
-
-		//Fire weapon
-		EnhancedInputComponent->BindAction(FireWeaponAction, ETriggerEvent::Started, this,
-		                                   &AAlanWakeCharacter::FireWeapon);
-		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AAlanWakeCharacter::Reload);
-	
-	}
-	else
-	{
-		UE_LOG(LogTemplateCharacter, Error,
-		       TEXT(
-			       "'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."
-		       ), *GetNameSafe(this));
-	}
-}
+////////////////////////////////////////
+///Input actions
 
 float AAlanWakeCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 	class AController* EventInstigator, AActor* DamageCauser)
@@ -260,6 +173,16 @@ void AAlanWakeCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void AAlanWakeCharacter::SprintStart(const FInputActionValue& Value)
+{
+	BP_OnSprintStarted();
+}
+
+void AAlanWakeCharacter::SprintEnd(const FInputActionValue& Value)
+{
+	BP_OnSprintStopped();
+}
+
 void AAlanWakeCharacter::ToggleCrouch(const FInputActionValue& Value)
 {
 	if (bIsCrouched)
@@ -274,10 +197,17 @@ void AAlanWakeCharacter::ToggleCrouch(const FInputActionValue& Value)
 
 void AAlanWakeCharacter::ThrowItem(const FInputActionValue& value)
 {
-	if (CurrentEquipState != EEquipState::Throwable || !bHasThrowable || !ThrowMontage || !bIsAiming) return;
-
-	PlayAnimMontage(ThrowMontage);
+	
 }
+void AAlanWakeCharacter::EquipWeapon(EWeaponType NewWeaponType)
+{
+	if (WeaponComp)
+	{
+		WeaponComp->EquipWeapon(NewWeaponType);
+		BP_UpdateWeaponVisuals();
+	}
+}
+
 
 void AAlanWakeCharacter::StartAim(const FInputActionValue& value)
 {
@@ -287,72 +217,55 @@ void AAlanWakeCharacter::StartAim(const FInputActionValue& value)
 		return;
 	}
 	bIsAiming = true;
+    
+	if (FlashlightComp)
+	{
+		FlashlightComp->SetFocusMode(true);
+	}
+	
+	BP_OnAimStarted();
+	
 }
 
 void AAlanWakeCharacter::StopAim(const FInputActionValue& value)
 {
 	bIsAiming = false;
+	if (FlashlightComp)
+	{
+		FlashlightComp->SetFocusMode(false);
+	}
+	BP_OnAimStopped();
 }
-
 void AAlanWakeCharacter::FireWeapon(const FInputActionValue& value)
 {
-	if (CurrentEquipState != EEquipState::Pistol || CurrentAmmo <= 0 || !bIsAiming) return;
-
-	if (bCanFire)
+	if (bIsAiming && FollowCamera && WeaponComp)
 	{
-		CurrentAmmo--;
-		//Set back to true in the blueprint event
-		bCanFire = false;
-		if (FollowCamera)
+		if (!WeaponComp->Fire(FollowCamera->GetComponentLocation(), FollowCamera->GetForwardVector()))
 		{
-			FVector Start = FollowCamera->GetComponentLocation();
-			FVector End = FollowCamera->GetComponentLocation() + (FollowCamera->GetForwardVector() * 5000.f);
-			FHitResult Hit;
-			FCollisionQueryParams QueryParams;
-			QueryParams.AddIgnoredActor(this);
-			bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, QueryParams);
-			float DamageToApply = BaseDamage;
-			if (bHit)
-			{
-				if (Hit.GetActor() && Hit.GetActor()->ActorHasTag(TEXT("Enemy")))
-				{
-					FString HitBone = Hit.BoneName.ToString().ToLower();
-
-					if (HitBone.Contains(TEXT("head")))
-					{
-						DamageToApply *= 10.f;
-					}
-					else if (HitBone.Contains(TEXT("arm")) || HitBone.Contains(TEXT("leg")) || HitBone.
-						Contains(TEXT("calf")) || HitBone.Contains(TEXT("thigh")))
-					{
-						DamageToApply *= 0.5f;
-					}
-					if (APlayerController* PC = Cast<APlayerController>(GetLocalViewingPlayerController()))
-					{
-						UGameplayStatics::ApplyDamage(Hit.GetActor(), DamageToApply, GetController(), this,
-													  UDamageType::StaticClass());
-					}
-				}
-			}
-			BP_OnWeaponFired(bHit, Hit.GetActor(), Hit.ImpactPoint, Hit.ImpactNormal, Hit.BoneName);
+			BP_PlayDryFire();
 		}
 	}
 }
 
 void AAlanWakeCharacter::Reload(const FInputActionValue& value)
 {
+	if (WeaponComp)
+	{
+		WeaponComp->Reload();
+		
+		if (ReloadMontage)
+		{
+			PlayAnimMontage(ReloadMontage);
+			bCanAim = false;
+			bIsAiming = false;
+		}
+	}
+}
 
-	const int32 MaxMagAmmo = 7;
-	if (ReserveAmmo <= 0 || CurrentAmmo >= MaxMagAmmo) return;
-
-
-	PlayAnimMontage(ReloadMontage);
-	bCanAim = false;
-	bIsAiming = false;
-	
-	int32 AmmoNeeded = MaxMagAmmo - CurrentAmmo;
-	int32 AmmoToMove = FMath::Min(AmmoNeeded, ReserveAmmo);
-	
-	CurrentAmmo += AmmoToMove;
-	ReserveAmmo -= AmmoToMove;
+void AAlanWakeCharacter::ToggleFlashlight(const FInputActionValue& value)
+{
+	if (FlashlightComp)
+	{
+		FlashlightComp->ToggleFlashlight();
+	}
 }

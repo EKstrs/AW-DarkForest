@@ -1,0 +1,65 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "AlanWakeSlice/AWCoreTypes.h"
+#include "Components/ActorComponent.h"
+#include "InventoryComponent.generated.h"
+
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChanged);
+
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class ALANWAKESLICE_API UInventoryComponent : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:	
+
+	UInventoryComponent();
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnInventoryChanged OnInventoryChangedDelegate;
+
+	// Core Resource Storage
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	int32 GetRevolverMag() const { return RevolverAmmo; }
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	int32 GetRevolverReserve() const { return RevolverReserveAmmo; }
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	int32 GetFlareGunAmmo() const { return FlareGunAmmo; }
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	int32 GetFlareCount() const { return FlareCount; }
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	float GetBatteryReserve() const { return BatteryReserve; }
+
+	bool TryConsumeAmmo(EWeaponType WeaponType);
+	void ReloadWeapon(EWeaponType WeaponType, int32 MaxMagSize);
+	void AddPickup(uint8 PickupType, int32 Amount);
+
+protected:
+
+	virtual void BeginPlay() override;
+
+private:
+
+	
+	int32 RevolverAmmo = 6;
+	int32 RevolverReserveAmmo = 12;
+	
+	int32 FlareGunAmmo = 0;
+	int32 FlareGunReserveAmmo = 0;
+
+	int32 FlareCount = 0;
+
+	int32 ThrowableAmmo = 0;
+
+	float BatteryReserve = 2.f;
+};

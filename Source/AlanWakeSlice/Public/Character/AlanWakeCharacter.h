@@ -46,6 +46,12 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
+	UFUNCTION(BlueprintCallable, Category = "SaveSystem")
+	void LoadPlayerState();
+	//Getters
+
+	float GetHealth() const { return CurrentHealth; }
+	float GetMaxHealth() const { return MaxHealth; }
 
 	/** Components */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
@@ -111,6 +117,8 @@ public:
 	
 	/** Called for Weapon reload input */
 	void Reload(const FInputActionValue& value);
+
+	void Interact(const FInputActionValue& value);
 
 	void ToggleFlashlight(const FInputActionValue& value);
 

@@ -19,7 +19,7 @@ public:
 
 	void Initialize(UInventoryComponent* InInventoryComponent);
 	void EquipWeapon(EWeaponType NewWeapon);
-	bool Fire(FVector CameraLocation, FVector CameraForward);
+	bool Fire(FVector MuzzleLocation, FVector AimDirection);
 	void Reload();
 
 	UFUNCTION(BLueprintCallable)

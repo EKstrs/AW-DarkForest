@@ -40,6 +40,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	float GetBatteryReserve() const { return BatteryReserve; }
 
+	//Setters
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SetRevolverMag(int32 InMag) {  RevolverAmmo = InMag; }
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SetRevolverReserve(int32 InReserve) {   RevolverReserveAmmo = InReserve; }
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SetFlareGunAmmo(int32 InAmmo) { FlareGunAmmo =  InAmmo; }
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SetFlareCount(int32 InCount) { FlareCount = InCount; }
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SetBatteryReserve(float InReserve) {  BatteryReserve = InReserve; }
+
 	bool TryConsumeAmmo(EWeaponType WeaponType);
 	void ReloadWeapon(EWeaponType WeaponType, int32 MaxMagSize);
 	void AddPickup(uint8 PickupType, int32 Amount);

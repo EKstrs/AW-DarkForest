@@ -26,14 +26,14 @@ void UWeaponComponent::EquipWeapon(EWeaponType NewWeapon)
 	CurrentWeapon = NewWeapon;
 }
 
-bool UWeaponComponent::Fire(FVector CameraLocation, FVector CameraForward)
+bool UWeaponComponent::Fire(FVector MuzzleLocation, FVector AimDirection)
 {
 	if (!InventoryComponent || !InventoryComponent->TryConsumeAmmo(CurrentWeapon)) return false;
 
 	if (CurrentWeapon == EWeaponType::Revolver)
 	{
-		FVector Start = CameraLocation;
-		FVector End = Start + (CameraForward * 5000.f);
+		FVector Start = MuzzleLocation;
+		FVector End = Start + (AimDirection * 5000.f);
 		FHitResult Hit;
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(GetOwner());

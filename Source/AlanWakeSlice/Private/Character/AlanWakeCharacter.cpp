@@ -19,7 +19,10 @@
 #include "Components/WeaponComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/WidgetComponent.h"
+#include "Game/AWGameMode.h"
 #include "GameFramework/DamageType.h"
+#include "Interfaces/Interactable.h"
+#include "SaveGame/AWSaveGame.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -88,6 +91,50 @@ AAlanWakeCharacter::AAlanWakeCharacter()
 
 }
 
+void AAlanWakeCharacter::LoadPlayerState()
+{
+	if (UGameplayStatics::DoesSaveGameExist(TEXT("Slot1"), 0))
+	{
+		UAWSaveGame* LoadedGame = Cast<UAWSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("Slot1"), 0));
+		
+		if (LoadedGame)
+		{
+			SetActorLocationAndRotation(LoadedGame->PlayerLocation, LoadedGame->PlayerRotation);
+			
+			CurrentHealth = LoadedGame->PlayerHealth;
+			OnHealthChangedDelegate.Broadcast(CurrentHealth);
+			bIsDead = false;
+			
+			if (InventoryComp)
+			{
+				InventoryComp->SetRevolverMag(LoadedGame->RevolverMag);
+				InventoryComp->SetRevolverReserve(LoadedGame->RevolverReserve);
+				InventoryComp->SetFlareGunAmmo(LoadedGame->FlareGunAmmo);
+				InventoryComp->SetFlareCount(LoadedGame->FlareCount);
+			}
+
+			if (FlashlightComp)
+			{
+				FlashlightComp->SetBatteryLevel(LoadedGame->BatteryLevel);
+			}
+
+			if (AController* PlayerController = GetController())
+			{
+				PlayerController->SetControlRotation(LoadedGame->PlayerRotation);
+				EnableInput(Cast<APlayerController>(PlayerController));
+			}
+			
+			GetMesh()->SetSimulatePhysics(false);
+			
+			GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+			
+			GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -96.f), FRotator(0.f, -90.f, 0.f));
+			GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh"));
+			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		}
+	}
+}
+
 
 void AAlanWakeCharacter::BeginPlay()
 {
@@ -137,6 +184,10 @@ void AAlanWakeCharacter::OnDeath()
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		DisableInput(PC);
+	}
+	if (AAWGameMode* GM = Cast<AAWGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GM->PlayerDied(this);
 	}
 }
 
@@ -263,6 +314,35 @@ void AAlanWakeCharacter::Reload(const FInputActionValue& value)
 			bIsAiming = false;
 		}
 	}
+}
+
+void AAlanWakeCharacter::Interact(const FInputActionValue& value)
+{
+	FVector StartLoc = GetActorLocation();
+	TArray<AActor*> OverlappingActors;
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+	
+	UKismetSystemLibrary::SphereOverlapActors(
+		this, 
+		StartLoc, 
+		150.0f, 
+		TArray<TEnumAsByte<EObjectTypeQuery>>(), 
+		AActor::StaticClass(), 
+		ActorsToIgnore, 
+		OverlappingActors
+	);
+
+	for (AActor* OverlappedActor : OverlappingActors)
+	{
+		if (IInteractable* InteractableObj = Cast<IInteractable>(OverlappedActor))
+		{
+			InteractableObj->TryInteract(this);
+		
+			break; 
+		}
+	}
+	
 }
 
 void AAlanWakeCharacter::ToggleFlashlight(const FInputActionValue& value)

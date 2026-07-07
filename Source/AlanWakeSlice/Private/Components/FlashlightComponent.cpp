@@ -4,28 +4,32 @@
 #include "Components/FlashlightComponent.h"
 
 #include "CollisionQueryParams.h"
+#include "Animation/AnimInstanceProxy.h"
 #include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Engine/HitResult.h"
+#include "Engine/OverlapResult.h"
 #include "Engine/World.h"
+#include "GameFramework/Character.h"
+#include "Interfaces/FlashlightAffected.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 UFlashlightComponent::UFlashlightComponent()
 {
-
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
 void UFlashlightComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 void UFlashlightComponent::UpdateBatteryDrain(float DeltaTime)
 {
 	float Drain = bFocusMode
-		? (DeltaTime * FocusDrainMultiplier * 0.01f)
-		: (DeltaTime * AmbientDrainRate);
+		              ? (DeltaTime * FocusDrainMultiplier * 0.01f)
+		              : (DeltaTime * AmbientDrainRate);
 
 	BatteryLevel = FMath::Clamp(BatteryLevel - Drain, 0.f, 1.f);
 	OnBatteryLevelChanged.Broadcast(BatteryLevel);
@@ -41,38 +45,72 @@ void UFlashlightComponent::UpdateBatteryDrain(float DeltaTime)
 
 void UFlashlightComponent::UpdateFlashlightAimDirection()
 {
-	if (!bFocusMode || !SpotLightInner || !CameraComponent) return;
+	if (!SpotLightInner || !CameraComponent) return;
 
-	FVector CamLoc = CameraComponent->GetComponentLocation();
-	FVector CamForward = CameraComponent->GetForwardVector();
+	// Find the point the camera (and crosshair) is actually looking at, rather than
+	// just copying the camera's rotation. The spotlight sits on the hand socket, offset
+	// from the camera in world space, so matching rotation alone causes the beam to
+	// diverge from the crosshair the further out it goes (classic parallax problem).
+	const FVector CameraLoc = CameraComponent->GetComponentLocation();
+	const FVector CameraFwd = CameraComponent->GetForwardVector();
+	const FVector TraceEnd = CameraLoc + (CameraFwd * 5000.f);
 
-	// Trace from camera center to find world target point
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 
-	FVector TraceEnd = CamLoc + (CamForward * 5000.f);
-	FVector TargetPoint = TraceEnd;
+	FVector AimPoint = TraceEnd;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, CameraLoc, TraceEnd, ECC_Visibility, Params))
+	{
+		AimPoint = Hit.ImpactPoint;
+	}
 
-	if (GetWorld()->LineTraceSingleByChannel(Hit, CamLoc, TraceEnd, ECC_Visibility, Params))
-		TargetPoint = Hit.ImpactPoint;
+	// Aim the spotlight AT that point instead of matching camera rotation directly.
+	const FVector LightLoc = SpotLightInner->GetComponentLocation();
+	const FRotator TargetRotation = (AimPoint - LightLoc).Rotation();
 
-	// Rotate from spotlight's current world position toward the hit point
-	FVector FromLight = SpotLightInner->GetComponentLocation();
-	FRotator AimRotation = (TargetPoint - FromLight).GetSafeNormal().Rotation();
+	const float DeltaTime = GetWorld()->GetDeltaSeconds();
+	const FRotator SmoothRotation = FMath::RInterpTo(SpotLightInner->GetComponentRotation(), TargetRotation, DeltaTime, 15.0f);
 
-	SpotLightInner->SetWorldRotation(AimRotation);
-	if (SpotLightOuter) SpotLightOuter->SetWorldRotation(AimRotation);
+	SpotLightInner->SetWorldRotation(SmoothRotation);
+	if (SpotLightOuter) SpotLightOuter->SetWorldRotation(SmoothRotation);
 }
 
 
-void UFlashlightComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UFlashlightComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+                                         FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	if (bIsOn)
 	{
 		UpdateBatteryDrain(DeltaTime);
 		UpdateFlashlightAimDirection();
+
+		FCollisionObjectQueryParams ObjParams;
+		ObjParams.AddObjectTypesToQuery(ECC_Pawn);
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(GetOwner());
+
+		FCollisionShape SphereShape = FCollisionShape::MakeSphere(2000.f);
+		TArray<FOverlapResult> OverlapResults;
+
+		if (GetWorld()->OverlapMultiByObjectType(OverlapResults, SpotLightInner->GetComponentLocation(), FQuat::Identity, ObjParams, SphereShape, Params))
+		{
+			for (const FOverlapResult& Result : OverlapResults)
+			{
+				AActor* OverlappedActor = Result.GetActor();
+
+				if (IFlashlightAffected* LightTarget = Cast<IFlashlightAffected>(OverlappedActor))
+				{
+					float Exposure = GetExposureOnActor(OverlappedActor);
+
+					if (Exposure > 0.0f)
+					{
+						LightTarget->ReceiveFlashlightExposure(Exposure * BaseShieldDrainRate * DeltaTime, bFocusMode);
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -115,9 +153,8 @@ void UFlashlightComponent::ToggleFlashlight()
 
 void UFlashlightComponent::SetFocusMode(bool bEnabled)
 {
-	bFocusMode = bEnabled;
 	if (!bIsOn) return;
-
+	bFocusMode = bEnabled;
 	if (bFocusMode)
 	{
 		if (SpotLightInner)
@@ -145,7 +182,7 @@ void UFlashlightComponent::SetFocusMode(bool bEnabled)
 			SpotLightOuter->SetOuterConeAngle(OuterOuterConeAngle);
 			SpotLightOuter->SetIntensity(OuterIntensity);
 		}
-		
+
 		if (SpotLightInner) SpotLightInner->SetUsingAbsoluteRotation(false);
 		if (SpotLightOuter) SpotLightOuter->SetUsingAbsoluteRotation(false);
 	}
@@ -157,33 +194,41 @@ float UFlashlightComponent::GetExposureOnActor(AActor* TargetActor)
 
 	FVector LightLoc = SpotLightInner->GetComponentLocation();
 	FVector LightFwd = SpotLightInner->GetForwardVector();
-	FVector DirToTarget = (TargetActor->GetActorLocation() - LightLoc).GetSafeNormal();
-	float Dot = FVector::DotProduct(LightFwd, DirToTarget);
+
+	FVector TargetChestLoc = TargetActor->GetActorLocation();
+	float TargetRadius = 40.0f;
 	
+	if (ACharacter* CharTarget = Cast<ACharacter>(TargetActor))
+	{
+		TargetChestLoc.Z += CharTarget->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 0.5f;
+		TargetRadius = CharTarget->GetCapsuleComponent()->GetScaledCapsuleRadius();
+	}
+	
+	FVector VectorToTarget = TargetChestLoc - LightLoc;
+	float Distance = VectorToTarget.Size();
+	FVector DirToTarget = VectorToTarget / FMath::Max(Distance, 1.0f);
+	
+	float Dot = FVector::DotProduct(LightFwd, DirToTarget);
+
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 	Params.AddIgnoredActor(TargetActor);
 
 	bool bBlocked = GetWorld()->LineTraceSingleByChannel(
-		Hit, LightLoc, TargetActor->GetActorLocation(), ECC_Visibility, Params);
+		Hit, LightLoc, TargetChestLoc, ECC_Visibility, Params);
 
 	if (bBlocked) return 0.0f;
-	
-	float InnerConeRad = FMath::DegreesToRadians(SpotLightInner->OuterConeAngle);
-	if (Dot > FMath::Cos(InnerConeRad))
-		return bFocusMode ? 1.0f : 0.6f;
 
-	// Outer spill — weak exposure, only affects normal Taken shields
-	// Heavy Taken (bRequiresFocusBeam) ignores this
-	if (SpotLightOuter)
+	float AngularRadius = FMath::Asin(FMath::Clamp(TargetRadius / FMath::Max(Distance, 1.0f), 0.0f, 1.0f));
+
+	float CurrentConeRad = FMath::DegreesToRadians(SpotLightInner->OuterConeAngle);
+
+	float TotalAllowedAngle = CurrentConeRad + AngularRadius;
+
+	if (FMath::Acos(Dot) <= TotalAllowedAngle)
 	{
-		float OuterConeRad = FMath::DegreesToRadians(SpotLightOuter->OuterConeAngle);
-		if (Dot > FMath::Cos(OuterConeRad))
-			return 0.15f;
+		return bFocusMode ? 1.0f : 0.6f;
 	}
-
 	return 0.0f;
-
 }
-

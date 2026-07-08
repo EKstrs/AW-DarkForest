@@ -39,10 +39,17 @@ protected:
 	UFUNCTION()
 	void OnShieldDestroyed();
 
-	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Audio")
+	void BP_UpdateShieldAudio(float ShieldPercentage);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Audio")
+	void BP_StopShieldAudio();
 private:
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TakenBase", meta = (AllowPrivateAccess = "true"))
 	float BaseWalkSpeed = 500.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TakenBase",  meta = (AllowPrivateAccess = "true"))
 	float FocusedWalkSpeed = 150.f;
 	bool bHasFlinched = false;
 

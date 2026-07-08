@@ -17,6 +17,13 @@ ATakenBase::ATakenBase()
 	AIControllerClass = ATakenAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
+	
+}
+void ATakenBase::BeginPlay()
+{
+	Super::BeginPlay();
+	GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+	CurrentHealth = MaxHealth;
 }
 
 void ATakenBase::ReceiveFlashlightExposure(float ExposureValue, bool bIsFocusBeam)
@@ -24,6 +31,12 @@ void ATakenBase::ReceiveFlashlightExposure(float ExposureValue, bool bIsFocusBea
 	if (DarknessShieldComponent)
 	{
 		DarknessShieldComponent->ProcessExposure(ExposureValue, bIsFocusBeam);
+		if (!DarknessShieldComponent->bIsVulnerable)
+		{
+			float ShieldPct = DarknessShieldComponent->CurrentShield / DarknessShieldComponent->MaxShield;
+			if (DarknessShieldComponent->bRequiresFocusBeam && !bIsFocusBeam) return;
+			BP_UpdateShieldAudio(ShieldPct);
+		}
 	}
 	if (bIsFocusBeam)
 	{
@@ -58,15 +71,10 @@ float ATakenBase::TakeDamage(float DamageAmount, struct FDamageEvent const& Dama
 	return ActualDamage;
 }
 
-void ATakenBase::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
 void ATakenBase::OnShieldDestroyed()
 {
 	//TODO Trigger VFX/AUDIO in BP
+	BP_StopShieldAudio();
 }
 
 void ATakenBase::ResetSpeed()
@@ -74,6 +82,8 @@ void ATakenBase::ResetSpeed()
 	GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
 	bHasFlinched = false;
 	bIsBeingFocused = false;
+
+	BP_StopShieldAudio();
 }
 
 

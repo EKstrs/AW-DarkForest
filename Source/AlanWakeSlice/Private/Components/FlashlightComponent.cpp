@@ -102,11 +102,12 @@ void UFlashlightComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 				if (IFlashlightAffected* LightTarget = Cast<IFlashlightAffected>(OverlappedActor))
 				{
-					float Exposure = GetExposureOnActor(OverlappedActor);
+					FVector HitLocation, HitNormal;
+					float Exposure = GetExposureOnActor(OverlappedActor, HitLocation, HitNormal);
 
 					if (Exposure > 0.0f)
 					{
-						LightTarget->ReceiveFlashlightExposure(Exposure * BaseShieldDrainRate * DeltaTime, bFocusMode);
+						LightTarget->ReceiveFlashlightExposure(Exposure * BaseShieldDrainRate * DeltaTime, bFocusMode, HitLocation, HitNormal);
 					}
 				}
 			}
@@ -188,7 +189,7 @@ void UFlashlightComponent::SetFocusMode(bool bEnabled)
 	}
 }
 
-float UFlashlightComponent::GetExposureOnActor(AActor* TargetActor)
+float UFlashlightComponent::GetExposureOnActor(AActor* TargetActor, FVector& OutHitLocation, FVector& OutHitNormal)
 {
 	if (!bIsOn || !SpotLightInner || !TargetActor) return 0.0f;
 
@@ -228,6 +229,8 @@ float UFlashlightComponent::GetExposureOnActor(AActor* TargetActor)
 
 	if (FMath::Acos(Dot) <= TotalAllowedAngle)
 	{
+		OutHitLocation = TargetChestLoc;
+		OutHitNormal = -LightFwd;
 		return bFocusMode ? 1.0f : 0.6f;
 	}
 	return 0.0f;

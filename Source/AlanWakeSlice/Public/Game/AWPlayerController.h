@@ -95,4 +95,5 @@ private:
 	void HandleCrouch(const FInputActionValue& Value);
 	void HandleThrow(const FInputActionValue& Value);
 	void HandleReload(const FInputActionValue& Value);
+	void HandleInteract(const FInputActionValue& Value);
 };

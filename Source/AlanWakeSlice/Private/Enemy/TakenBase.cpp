@@ -8,6 +8,9 @@
 #include "Components/DarknessShield.h"
 #include "Engine/World.h"
 #include "Game/AWGameMode.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 ATakenBase::ATakenBase()
@@ -24,9 +27,14 @@ void ATakenBase::BeginPlay()
 	Super::BeginPlay();
 	GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
 	CurrentHealth = MaxHealth;
+
+	if (DarknessShieldComponent)
+	{
+		DarknessShieldComponent->OnDarknessShieldDepletedDelegate.AddDynamic(this, &ATakenBase::OnShieldDestroyed);
+	}
 }
 
-void ATakenBase::ReceiveFlashlightExposure(float ExposureValue, bool bIsFocusBeam)
+void ATakenBase::ReceiveFlashlightExposure(float ExposureValue, bool bIsFocusBeam, const FVector& HitLocation, const FVector& HitNormal) 
 {
 	if (DarknessShieldComponent)
 	{
@@ -37,6 +45,22 @@ void ATakenBase::ReceiveFlashlightExposure(float ExposureValue, bool bIsFocusBea
 			if (DarknessShieldComponent->bRequiresFocusBeam && !bIsFocusBeam) return;
 			BP_UpdateShieldAudio(ShieldPct);
 		}
+	}
+	if (FlashlightHitVFX && DarknessShieldComponent && !DarknessShieldComponent->bIsVulnerable)
+	{
+		if (!ActiveFlashlightVFX)
+		{
+			ActiveFlashlightVFX = UNiagaraFunctionLibrary::SpawnSystemAttached(
+				FlashlightHitVFX, GetMesh(), NAME_None,
+				HitLocation, HitNormal.Rotation(),
+				EAttachLocation::KeepWorldPosition, true);
+		}
+		else
+		{
+			ActiveFlashlightVFX->SetWorldLocationAndRotation(HitLocation, HitNormal.Rotation());
+		}
+
+		GetWorldTimerManager().SetTimer(FlashlightVFXStopTimer, this, &ATakenBase::StopFlashlightVFX, 0.15f, false);
 	}
 	if (bIsFocusBeam)
 	{
@@ -64,8 +88,7 @@ float ATakenBase::TakeDamage(float DamageAmount, struct FDamageEvent const& Dama
 
 	if (CurrentHealth <= 0.0f)
 	{
-		//TODO Trigger dissolve VFX
-		Destroy(); 
+		BP_OnDeath();
 	}
 
 	return ActualDamage;
@@ -74,7 +97,27 @@ float ATakenBase::TakeDamage(float DamageAmount, struct FDamageEvent const& Dama
 void ATakenBase::OnShieldDestroyed()
 {
 	//TODO Trigger VFX/AUDIO in BP
+	BP_OnShieldDestroyed();
+	StopFlashlightVFX();
+	if (ShieldBreakVFX)
+	{
+		const FVector BurstLocation = GetActorLocation() +
+			FVector(0.f, 0.f, GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 0.5f);
+
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), ShieldBreakVFX, BurstLocation, GetActorRotation(),
+			FVector(1.f), true, true);
+	}
 	BP_StopShieldAudio();
+}
+
+void ATakenBase::StopFlashlightVFX()
+{
+	if (ActiveFlashlightVFX)
+	{
+		ActiveFlashlightVFX->Deactivate();
+		ActiveFlashlightVFX = nullptr;
+	}
 }
 
 void ATakenBase::ResetSpeed()

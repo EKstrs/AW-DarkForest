@@ -23,5 +23,5 @@ class ALANWAKESLICE_API IFlashlightAffected
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 
-	virtual void ReceiveFlashlightExposure(float ExposureAmount, bool bIsFocusBeam) = 0;
+	virtual void ReceiveFlashlightExposure(float ExposureAmount, bool bIsFocusBeam, const FVector& HitLocation, const FVector& HitNormal) = 0;
 };

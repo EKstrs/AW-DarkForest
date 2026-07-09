@@ -27,6 +27,7 @@ void AAWPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this,  &AAWPlayerController::HandleCrouch);
 		EnhancedInputComponent->BindAction(ThrowAction,  ETriggerEvent::Started, this, &AAWPlayerController::HandleThrow);
 		EnhancedInputComponent->BindAction(ReloadAction,  ETriggerEvent::Started, this, &AAWPlayerController::HandleReload);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AAWPlayerController::HandleInteract);
 	}
 }
 
@@ -154,6 +155,14 @@ void AAWPlayerController::HandleReload(const FInputActionValue& Value)
 	if (AWCharacter)
 	{
 		AWCharacter->Reload(Value);
+	}
+}
+
+void AAWPlayerController::HandleInteract(const FInputActionValue& Value)
+{
+	if (AWCharacter)
+	{
+		AWCharacter->Interact(Value);
 	}
 }
 

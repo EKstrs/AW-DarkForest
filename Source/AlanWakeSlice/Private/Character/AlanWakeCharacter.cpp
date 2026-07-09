@@ -91,6 +91,104 @@ AAlanWakeCharacter::AAlanWakeCharacter()
 
 }
 
+void AAlanWakeCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	if (WeaponComp && InventoryComp)
+	{
+		WeaponComp->Initialize(InventoryComp);
+	}
+	
+	if (FlashlightComp && FlashlightInner && FlashlightOuter)
+	{
+		FlashlightComp->SetupLights(FlashlightInner, FlashlightOuter);
+		FlashlightComp->SetCamera(FollowCamera);
+	}
+	if (InventoryComp)
+	{
+		InventoryComp->OnInventoryChangedDelegate.AddDynamic(this, &AAlanWakeCharacter::UpdateClosestInteractable);
+	}
+}
+
+void AAlanWakeCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+}
+
+void AAlanWakeCharacter::RegisterInteractable(AActor* InteractableActor)
+{
+	if (InteractableActor)
+	{
+		NearbyInteractables.AddUnique(InteractableActor);
+		UpdateClosestInteractable();
+	}
+}
+
+void AAlanWakeCharacter::UnregisterInteractable(AActor* InteractableActor)
+{
+	if (InteractableActor)
+	{
+		NearbyInteractables.Remove(InteractableActor);
+		UpdateClosestInteractable();
+	}
+}
+
+void AAlanWakeCharacter::UpdateClosestInteractable()
+{
+	AActor* BestValidActor = nullptr;
+	AActor* ClosestFullActor = nullptr;
+
+	float MinDistValid = MAX_FLT;
+	float MinDistFull = MAX_FLT;
+	FVector PlayerLoc = GetActorLocation();
+
+	for (AActor* Actor : NearbyInteractables)
+	{
+		if (Actor)
+		{
+			float DistSq = FVector::DistSquared(PlayerLoc, Actor->GetActorLocation());
+            
+			if (IInteractable* InteractableObj = Cast<IInteractable>(Actor))
+			{
+				if (InteractableObj->CanInteract(this))
+				{
+					if (DistSq < MinDistValid)
+					{
+						MinDistValid = DistSq;
+						BestValidActor = Actor;
+					}
+				}
+				else 
+				{
+					if (DistSq < MinDistFull)
+					{
+						MinDistFull = DistSq;
+						ClosestFullActor = Actor;
+					}
+				}
+			}
+		}
+	}
+	AActor* ChosenActor = BestValidActor ? BestValidActor : ClosestFullActor;
+	if (ChosenActor != CurrentTargetInteractable)
+	{
+		CurrentTargetInteractable = ChosenActor;
+
+		if (CurrentTargetInteractable)
+		{
+			if (IInteractable* InteractableObj = Cast<IInteractable>(CurrentTargetInteractable))
+			{
+				BP_ShowInteractPrompt(InteractableObj->GetInteractableName());
+			}
+		}
+		else
+		{
+			BP_HideInteractPrompt();
+		}
+	}
+}
+
+
 void AAlanWakeCharacter::LoadPlayerState()
 {
 	if (UGameplayStatics::DoesSaveGameExist(TEXT("Slot1"), 0))
@@ -133,27 +231,6 @@ void AAlanWakeCharacter::LoadPlayerState()
 			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		}
 	}
-}
-
-
-void AAlanWakeCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-	if (WeaponComp && InventoryComp)
-	{
-		WeaponComp->Initialize(InventoryComp);
-	}
-	
-	if (FlashlightComp && FlashlightInner && FlashlightOuter)
-	{
-		FlashlightComp->SetupLights(FlashlightInner, FlashlightOuter);
-		FlashlightComp->SetCamera(FollowCamera);
-	}
-}
-
-void AAlanWakeCharacter::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
 }
 
 ////////////////////////////////////////
@@ -318,31 +395,24 @@ void AAlanWakeCharacter::Reload(const FInputActionValue& value)
 
 void AAlanWakeCharacter::Interact(const FInputActionValue& value)
 {
-	FVector StartLoc = GetActorLocation();
-	TArray<AActor*> OverlappingActors;
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
-	
-	UKismetSystemLibrary::SphereOverlapActors(
-		this, 
-		StartLoc, 
-		150.0f, 
-		TArray<TEnumAsByte<EObjectTypeQuery>>(), 
-		AActor::StaticClass(), 
-		ActorsToIgnore, 
-		OverlappingActors
-	);
-
-	for (AActor* OverlappedActor : OverlappingActors)
+	if (CurrentTargetInteractable && IsValid(CurrentTargetInteractable))
 	{
-		if (IInteractable* InteractableObj = Cast<IInteractable>(OverlappedActor))
+		if (IInteractable* InteractableObj = Cast<IInteractable>(CurrentTargetInteractable))
 		{
-			InteractableObj->TryInteract(this);
-		
-			break; 
+			FString ItemName = InteractableObj->GetInteractableName();
+            
+			if (InteractableObj->TryInteract(this))
+			{
+				BP_ShowPickupNotification(ItemName, true);
+				UnregisterInteractable(CurrentTargetInteractable); 
+			}
+			else
+			{
+				BP_ShowPickupNotification(ItemName, false);
+			}
+			
 		}
 	}
-	
 }
 
 void AAlanWakeCharacter::ToggleFlashlight(const FInputActionValue& value)

@@ -48,27 +48,65 @@ void UInventoryComponent::ReloadWeapon(EWeaponType WeaponType, int32 MaxMagSize)
 	}
 }
 
-void UInventoryComponent::AddPickup(uint8 PickupType, int32 Amount)
+bool UInventoryComponent::AddPickup(uint8 PickupType, int32 Amount)
+{
+	EPickupType Type = static_cast<EPickupType>(PickupType);
+	bool bWasAdded = false;
+
+	switch (Type)
+	{
+	case EPickupType::RevolverAmmo:
+	    if(RevolverReserveAmmo < MaxRevolverReserveAmmo)
+	    {
+	    	RevolverReserveAmmo = FMath::Min(RevolverReserveAmmo + Amount, MaxRevolverReserveAmmo);
+            bWasAdded = true;
+	    }
+		break;
+	case EPickupType::FlareGunAmmo:
+		if (FlareGunReserveAmmo < MaxFlareGunReserveAmmo)
+		{
+			FlareGunReserveAmmo = FMath::Min(FlareGunReserveAmmo + Amount, MaxFlareGunReserveAmmo);
+			bWasAdded = true;
+		}
+		break;
+	case EPickupType::Battery:
+		if (BatteryReserve < MaxBatteryReserve)
+		{
+			BatteryReserve = FMath::Min(BatteryReserve + Amount, MaxBatteryReserve);
+			bWasAdded = true;
+		}
+		break;
+	case EPickupType::Flare:
+		if (FlareCount < MaxFlareCount)
+		{
+			FlareCount = FMath::Min(FlareCount + Amount, MaxFlareCount);
+			bWasAdded = true;
+		}
+		break;
+	}
+
+	if (bWasAdded)
+	{
+		OnInventoryChangedDelegate.Broadcast();
+	}
+
+	return bWasAdded;
+}
+
+bool UInventoryComponent::CanAddPickup(uint8 PickupType, int32 Amount) const
 {
 	EPickupType Type = static_cast<EPickupType>(PickupType);
 
 	switch (Type)
 	{
 	case EPickupType::RevolverAmmo:
-		RevolverReserveAmmo += Amount; // Adds to the reserve, not the active magazine
-		break;
-	case EPickupType::FlareGunAmmo:
-		FlareGunReserveAmmo += Amount;
-		break;
+		return RevolverReserveAmmo < MaxRevolverReserveAmmo;
 	case EPickupType::Battery:
-		BatteryReserve += Amount;
-		break;
+		return BatteryReserve < MaxBatteryReserve;
 	case EPickupType::Flare:
-		FlareCount += Amount;
-		break;
+		return FlareCount < MaxFlareCount;
+	default:
+		return false;
 	}
-
-	// Tell the HUD to update!
-	OnInventoryChangedDelegate.Broadcast();
 }
 

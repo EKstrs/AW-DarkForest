@@ -23,7 +23,7 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnInventoryChanged OnInventoryChangedDelegate;
-
+	
 	// Core Resource Storage
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	int32 GetRevolverMag() const { return RevolverAmmo; }
@@ -40,8 +40,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	float GetBatteryReserve() const { return BatteryReserve; }
 
-	//Setters
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	float GetMaxBatteryReserve() const { return MaxBatteryReserve; }
 
+	//Setters
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void SetRevolverMag(int32 InMag) {  RevolverAmmo = InMag; }
 
@@ -59,8 +61,24 @@ public:
 
 	bool TryConsumeAmmo(EWeaponType WeaponType);
 	void ReloadWeapon(EWeaponType WeaponType, int32 MaxMagSize);
-	void AddPickup(uint8 PickupType, int32 Amount);
+	bool AddPickup(uint8 PickupType, int32 Amount);
 
+	bool CanAddPickup(uint8 PickupType, int32 Amount) const;
+
+
+    //Max Capacities
+    UPROPERTY(EditDefaultsOnly, Category = "Inventory Limits")
+    int32 MaxRevolverReserveAmmo = 24;
+    
+    UPROPERTY(EditDefaultsOnly, Category = "Inventory Limits")
+    float MaxBatteryReserve = 4.0f; 
+    
+    UPROPERTY(EditDefaultsOnly, Category = "Inventory Limits")
+    int32 MaxFlareCount = 6;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory Limits")
+	int32 MaxFlareGunReserveAmmo = 2;
+    
 protected:
 
 	virtual void BeginPlay() override;
@@ -78,5 +96,5 @@ private:
 
 	int32 ThrowableAmmo = 0;
 
-	float BatteryReserve = 2.f;
+	float BatteryReserve = 0.f;
 };

@@ -41,6 +41,12 @@ class AAlanWakeCharacter : public ACharacter
 	
 public:
 	AAlanWakeCharacter();
+
+	/** Pickups system */
+	void RegisterInteractable(AActor* InteractableActor);
+	void UnregisterInteractable(AActor* InteractableActor);
+
+	
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
@@ -48,8 +54,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SaveSystem")
 	void LoadPlayerState();
+	
 	//Getters
-
 	float GetHealth() const { return CurrentHealth; }
 	float GetMaxHealth() const { return MaxHealth; }
 
@@ -163,7 +169,26 @@ protected:
 	FOnHealthChanged OnHealthChangedDelegate;
 	
 	void OnDeath();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void BP_ShowInteractPrompt(const FString& ItemName);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void BP_HideInteractPrompt();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void BP_ShowPickupNotification(const FString& ItemName, bool bWasSuccessful);
 private:
+
+	UPROPERTY()
+	TArray<AActor*> NearbyInteractables;
+	
+	UPROPERTY()
+	AActor* CurrentTargetInteractable = nullptr;;
+
+	UFUNCTION()
+	void UpdateClosestInteractable();
+	
 	bool bIsTurning = false;
 	
 };

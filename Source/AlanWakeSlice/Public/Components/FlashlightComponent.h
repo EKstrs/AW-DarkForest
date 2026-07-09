@@ -48,7 +48,7 @@ public:
 	void SetCamera(UCameraComponent* InCamera);
 	void ToggleFlashlight();
 	void SetFocusMode(bool bEnabled);
-	float GetExposureOnActor(AActor* TargetActor);
+	float GetExposureOnActor(AActor* TargetActor, FVector& OutHitLocation, FVector& OutHitNormal);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FlashlightExposure")
 	float BaseShieldDrainRate = 50.f;

@@ -8,6 +8,7 @@
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDarknessShieldDepletedSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShieldValueChanged, float, ShieldPercent);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ALANWAKESLICE_API UDarknessShield : public UActorComponent
@@ -32,6 +33,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "DarknessShield")
 	FOnDarknessShieldDepletedSignature OnDarknessShieldDepletedDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = "DarknessShield")
+	FOnShieldValueChanged OnShieldValueChangedDelegate;
 	
 	void ProcessExposure(float ExposureValue, bool bIsFocusBeam);
 

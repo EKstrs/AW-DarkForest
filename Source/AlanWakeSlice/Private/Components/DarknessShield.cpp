@@ -35,6 +35,7 @@ void UDarknessShield::ProcessExposure(float ExposureValue, bool bIsFocusBeam)
 	if (bRequiresFocusBeam && !bIsFocusBeam) return;
 
 	CurrentShield = FMath::Clamp(CurrentShield - ExposureValue, 0.0f, MaxShield);
+	OnShieldValueChangedDelegate.Broadcast(CurrentShield / MaxShield);
 
 	if (CurrentShield <= 0.0f)
 	{

@@ -10,8 +10,10 @@
 #include "Game/AWGameMode.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/DecalComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 ATakenBase::ATakenBase()
 {
@@ -19,7 +21,7 @@ ATakenBase::ATakenBase()
 	DarknessShieldComponent = CreateDefaultSubobject<UDarknessShield>(TEXT("DarknessShieldComponent"));
 	AIControllerClass = ATakenAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-
+	
 	
 }
 void ATakenBase::BeginPlay()
@@ -30,8 +32,14 @@ void ATakenBase::BeginPlay()
 
 	if (DarknessShieldComponent)
 	{
+		DarknessShieldComponent->OnShieldValueChangedDelegate.AddDynamic(this, &ATakenBase::OnShieldValueChanged);
 		DarknessShieldComponent->OnDarknessShieldDepletedDelegate.AddDynamic(this, &ATakenBase::OnShieldDestroyed);
 	}
+}
+
+void ATakenBase::OnShieldValueChanged(float ShieldPercent)
+{
+
 }
 
 void ATakenBase::ReceiveFlashlightExposure(float ExposureValue, bool bIsFocusBeam, const FVector& HitLocation, const FVector& HitNormal) 
@@ -96,7 +104,6 @@ float ATakenBase::TakeDamage(float DamageAmount, struct FDamageEvent const& Dama
 
 void ATakenBase::OnShieldDestroyed()
 {
-	//TODO Trigger VFX/AUDIO in BP
 	BP_OnShieldDestroyed();
 	StopFlashlightVFX();
 	if (ShieldBreakVFX)

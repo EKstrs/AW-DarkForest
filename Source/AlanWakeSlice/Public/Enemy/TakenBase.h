@@ -23,6 +23,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TakenBase")
 	UDarknessShield* DarknessShieldComponent;
 	
+
+	UFUNCTION()
+	void OnShieldValueChanged(float ShieldPercent);
+	
+	
 	virtual void ReceiveFlashlightExposure(float ExposureValue, bool bIsFocusBeam, const FVector& HitLocation, const FVector& HitNormal) override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 

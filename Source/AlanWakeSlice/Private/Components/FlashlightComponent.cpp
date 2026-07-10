@@ -109,7 +109,7 @@ void UFlashlightComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 					{
 						LightTarget->ReceiveFlashlightExposure(Exposure * BaseShieldDrainRate * DeltaTime, bFocusMode, HitLocation, HitNormal);
 					}
-				}
+				} 
 			}
 		}
 	}
@@ -122,17 +122,21 @@ void UFlashlightComponent::SetupLights(USpotLightComponent* Inner, USpotLightCom
 
 	if (SpotLightInner)
 	{
-		SpotLightInner->SetInnerConeAngle(InnerInnerConeAngle);
-		SpotLightInner->SetOuterConeAngle(InnerOuterConeAngle);
-		SpotLightInner->SetIntensity(InnerIntensity);
+		SpotLightInner->SetInnerConeAngle(CoreInnerConeAngle);
+		SpotLightInner->SetOuterConeAngle(CoreOuterConeAngle);
+		SpotLightInner->SetIntensity(CoreIntensity);
+		SpotLightInner->SetVolumetricScatteringIntensity(CoreVolumetricScattering);
+		SpotLightInner->SetAttenuationRadius(CoreAttenuationRadius);
 		SpotLightInner->SetVisibility(false);
 	}
 
 	if (SpotLightOuter)
 	{
-		SpotLightOuter->SetInnerConeAngle(0.f);
-		SpotLightOuter->SetOuterConeAngle(OuterOuterConeAngle);
-		SpotLightOuter->SetIntensity(OuterIntensity);
+		SpotLightOuter->SetInnerConeAngle(SpillInnerConeAngle);
+		SpotLightOuter->SetOuterConeAngle(SpillOuterConeAngle);
+		SpotLightOuter->SetIntensity(SpillIntensity);
+		SpotLightOuter->SetVolumetricScatteringIntensity(SpillVolumetricScattering);
+		SpotLightOuter->SetAttenuationRadius(SpillAttenuationRadius);
 		SpotLightOuter->SetVisibility(false);
 	}
 }
@@ -160,28 +164,38 @@ void UFlashlightComponent::SetFocusMode(bool bEnabled)
 	{
 		if (SpotLightInner)
 		{
-			SpotLightInner->SetInnerConeAngle(FocusInnerInnerCone);
-			SpotLightInner->SetOuterConeAngle(FocusInnerOuterCone);
-			SpotLightInner->SetIntensity(FocusInnerIntensity);
+			SpotLightInner->SetInnerConeAngle(FocusCoreInnerCone);
+			SpotLightInner->SetOuterConeAngle(FocusCoreOuterCone);
+			SpotLightInner->SetIntensity(FocusCoreIntensity);
+			SpotLightInner->SetVolumetricScatteringIntensity(FocusCoreVolumetricScattering);
+			SpotLightInner->SetAttenuationRadius(FocusCoreAttenuationRadius);
 		}
 		if (SpotLightOuter)
 		{
-			SpotLightOuter->SetOuterConeAngle(FocusOuterOuterCone);
-			SpotLightOuter->SetIntensity(FocusOuterIntensity);
+			SpotLightOuter->SetInnerConeAngle(FocusSpillInnerCone);
+			SpotLightOuter->SetOuterConeAngle(FocusSpillOuterCone);
+			SpotLightOuter->SetIntensity(FocusSpillIntensity);
+			SpotLightOuter->SetVolumetricScatteringIntensity(FocusSpillVolumetricScattering);
+			SpotLightOuter->SetAttenuationRadius(FocusSpillAttenuationRadius);
 		}
 	}
 	else
 	{
 		if (SpotLightInner)
 		{
-			SpotLightInner->SetInnerConeAngle(InnerInnerConeAngle);
-			SpotLightInner->SetOuterConeAngle(InnerOuterConeAngle);
-			SpotLightInner->SetIntensity(InnerIntensity);
+			SpotLightInner->SetInnerConeAngle(CoreInnerConeAngle);
+			SpotLightInner->SetOuterConeAngle(CoreOuterConeAngle);
+			SpotLightInner->SetIntensity(CoreIntensity);
+			SpotLightInner->SetVolumetricScatteringIntensity(CoreVolumetricScattering);
+			SpotLightInner->SetAttenuationRadius(CoreAttenuationRadius);
 		}
 		if (SpotLightOuter)
 		{
-			SpotLightOuter->SetOuterConeAngle(OuterOuterConeAngle);
-			SpotLightOuter->SetIntensity(OuterIntensity);
+			SpotLightOuter->SetInnerConeAngle(SpillInnerConeAngle);
+			SpotLightOuter->SetOuterConeAngle(SpillOuterConeAngle);
+			SpotLightOuter->SetIntensity(SpillIntensity);
+			SpotLightOuter->SetVolumetricScatteringIntensity(SpillVolumetricScattering);
+			SpotLightOuter->SetAttenuationRadius(SpillAttenuationRadius);
 		}
 
 		if (SpotLightInner) SpotLightInner->SetUsingAbsoluteRotation(false);

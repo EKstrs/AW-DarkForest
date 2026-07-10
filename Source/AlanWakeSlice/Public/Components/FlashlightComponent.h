@@ -53,41 +53,72 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FlashlightExposure")
 	float BaseShieldDrainRate = 50.f;
 	
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
+	UPROPERTY(EditAnywhere, Category = "FlashlightExposure")
 	float FocusDrainMultiplier = 3.0f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
+	UPROPERTY(EditAnywhere, Category = "FlashlightExposure")
 	float AmbientDrainRate = 0.00f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float InnerInnerConeAngle = 6.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float CoreInnerConeAngle = 6.f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float InnerOuterConeAngle = 14.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float CoreOuterConeAngle = 14.f;
+	
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+    float SpillInnerConeAngle = 35.f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float OuterOuterConeAngle = 35.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+	float SpillOuterConeAngle = 35.f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float InnerIntensity = 4000.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float CoreIntensity = 4000.f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float OuterIntensity = 400.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+	float SpillIntensity = 400.f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float FocusInnerIntensity = 6000.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float FocusCoreIntensity = 6000.f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float FocusOuterIntensity = 300.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+	float FocusSpillIntensity = 300.f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float FocusInnerInnerCone = 4.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float FocusCoreInnerCone = 4.f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float FocusInnerOuterCone = 8.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float FocusCoreOuterCone = 8.f;
 
-	UPROPERTY(EditAnywhere, Category = "FlashlightRadius")
-	float FocusOuterOuterCone = 20.f;
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+	float FocusSpillInnerCone = 20.f;
+	
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+	float FocusSpillOuterCone = 20.f;
+	
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float CoreVolumetricScattering = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+	float SpillVolumetricScattering = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float FocusCoreVolumetricScattering = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+	float FocusSpillVolumetricScattering = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float CoreAttenuationRadius = 2000.f;
+
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+	float SpillAttenuationRadius = 2000.f;
+
+	UPROPERTY(EditAnywhere, Category = "FlashlightCoreSettings")
+	float FocusCoreAttenuationRadius = 2000.f;
+
+	UPROPERTY(EditAnywhere, Category = "FlashlightSpillSettings")
+	float FocusSpillAttenuationRadius = 2000.f;
+	
 
 protected:
 	virtual void BeginPlay() override;

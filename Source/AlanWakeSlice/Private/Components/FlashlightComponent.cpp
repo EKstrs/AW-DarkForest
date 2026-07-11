@@ -7,6 +7,7 @@
 #include "Animation/AnimInstanceProxy.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Engine/HitResult.h"
 #include "Engine/OverlapResult.h"
@@ -85,13 +86,14 @@ void UFlashlightComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	{
 		UpdateBatteryDrain(DeltaTime);
 		UpdateFlashlightAimDirection();
-
+		
 		FCollisionObjectQueryParams ObjParams;
 		ObjParams.AddObjectTypesToQuery(ECC_Pawn);
 		FCollisionQueryParams Params;
 		Params.AddIgnoredActor(GetOwner());
 
-		FCollisionShape SphereShape = FCollisionShape::MakeSphere(2000.f);
+		const float QueryRadius = SpotLightInner->AttenuationRadius;
+		FCollisionShape SphereShape = FCollisionShape::MakeSphere(QueryRadius);
 		TArray<FOverlapResult> OverlapResults;
 
 		if (GetWorld()->OverlapMultiByObjectType(OverlapResults, SpotLightInner->GetComponentLocation(), FQuat::Identity, ObjParams, SphereShape, Params))
@@ -212,40 +214,63 @@ float UFlashlightComponent::GetExposureOnActor(AActor* TargetActor, FVector& Out
 
 	FVector TargetChestLoc = TargetActor->GetActorLocation();
 	float TargetRadius = 40.0f;
-	
+
 	if (ACharacter* CharTarget = Cast<ACharacter>(TargetActor))
 	{
 		TargetChestLoc.Z += CharTarget->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 0.5f;
 		TargetRadius = CharTarget->GetCapsuleComponent()->GetScaledCapsuleRadius();
 	}
-	
+
 	FVector VectorToTarget = TargetChestLoc - LightLoc;
 	float Distance = VectorToTarget.Size();
 	FVector DirToTarget = VectorToTarget / FMath::Max(Distance, 1.0f);
-	
+
 	float Dot = FVector::DotProduct(LightFwd, DirToTarget);
-
-	FHitResult Hit;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(GetOwner());
-	Params.AddIgnoredActor(TargetActor);
-
-	bool bBlocked = GetWorld()->LineTraceSingleByChannel(
-		Hit, LightLoc, TargetChestLoc, ECC_Visibility, Params);
-
-	if (bBlocked) return 0.0f;
-
 	float AngularRadius = FMath::Asin(FMath::Clamp(TargetRadius / FMath::Max(Distance, 1.0f), 0.0f, 1.0f));
-
 	float CurrentConeRad = FMath::DegreesToRadians(SpotLightInner->OuterConeAngle);
-
 	float TotalAllowedAngle = CurrentConeRad + AngularRadius;
 
-	if (FMath::Acos(Dot) <= TotalAllowedAngle)
+	if (Distance > SpotLightInner->AttenuationRadius)
 	{
-		OutHitLocation = TargetChestLoc;
-		OutHitNormal = -LightFwd;
-		return bFocusMode ? 1.0f : 0.6f;
+		return 0.0f;
 	}
-	return 0.0f;
+	
+	if (FMath::Acos(Dot) > TotalAllowedAngle)
+	{
+		return 0.0f;
+	}
+
+	FHitResult BlockHit;
+	FCollisionQueryParams BlockParams;
+	BlockParams.AddIgnoredActor(GetOwner());
+	BlockParams.AddIgnoredActor(TargetActor);
+
+	bool bBlocked = GetWorld()->LineTraceSingleByChannel(
+		BlockHit, LightLoc, TargetChestLoc, ECC_Visibility, BlockParams);
+
+	if (bBlocked)
+	{
+		return 0.0f;
+	}
+	
+	FHitResult SurfaceHit;
+	FCollisionQueryParams SurfaceParams;
+	SurfaceParams.AddIgnoredActor(GetOwner());
+	
+	FVector TraceEnd = LightLoc + (DirToTarget * (Distance + 500.0f));
+	bool bSurfaceHit = GetWorld()->LineTraceSingleByChannel(
+		SurfaceHit, LightLoc, TraceEnd, ECC_Visibility, SurfaceParams);
+
+	if (bSurfaceHit && SurfaceHit.GetActor() == TargetActor)
+	{
+		OutHitLocation = SurfaceHit.ImpactPoint;
+		OutHitNormal = SurfaceHit.ImpactNormal;
+	}
+	else
+	{
+		OutHitLocation = TargetChestLoc - (DirToTarget * TargetRadius);
+		OutHitNormal = -DirToTarget;
+	}
+
+	return bFocusMode ? 1.0f : 0.6f;
 }

@@ -37,7 +37,4 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Taken AI")
 	float AttackAcceptanceRadius = 150.0f;
 	
-	
-	
-	
 };

@@ -34,6 +34,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void BP_OnFocusFlinch();
 
+	UPROPERTY(BlueprintReadOnly)
 	bool bIsBeingFocused = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VFX")
@@ -70,6 +71,12 @@ protected:
 
 	FTimerHandle FlashlightVFXStopTimer;
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Flashlight FX")
+	void BP_OnFlashlightHit(FVector HitLocation, float ExposureValue, bool bIsFocusBeam);
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Flashlight FX")
+	void BP_OnFlashlightStopped();
+	
 	void StopFlashlightVFX();
 private:
 
@@ -77,10 +84,15 @@ private:
 	float BaseWalkSpeed = 500.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TakenBase",  meta = (AllowPrivateAccess = "true"))
-	float FocusedWalkSpeed = 150.f;
+	float FocusedWalkSpeed = 0.f;
 	bool bHasFlinched = false;
 
 	FTimerHandle SpeedResetTimer;
 
 	void ResetSpeed();
+
+	UPROPERTY(EditDefaultsOnly, Category = "VFX", meta = (AllowPrivateAccess = "true"))
+	float ShieldBurnVFXInterval = 0.25f;
+
+	float LastShieldBurnVFXTime = -1.f;
 };

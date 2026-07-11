@@ -3,6 +3,7 @@
 
 #include "Enemy/TakenBase.h"
 
+#include "AudioMixer.h"
 #include "TimerManager.h"
 #include "AI/TakenAIController.h"
 #include "Components/DarknessShield.h"
@@ -12,6 +13,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/DecalComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
@@ -58,28 +60,40 @@ void ATakenBase::ReceiveFlashlightExposure(float ExposureValue, bool bIsFocusBea
 	{
 		if (!ActiveFlashlightVFX)
 		{
+			if (GetMesh() && GetMesh()->SkeletalMesh)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Currently checking mesh: %s"), *GetMesh()->SkeletalMesh->GetName());
+			}
+			FName TargetSocket = TEXT("ShieldBurstSocket");
+			// Debug check to verify if the mesh actually knows this socket exists
+			if (!GetMesh()->DoesSocketExist(TargetSocket))
+			{
+				UE_LOG(LogTemp, Error, TEXT("CRITICAL: Socket %s NOT FOUND on Mesh!"), *TargetSocket.ToString());
+			}
 			ActiveFlashlightVFX = UNiagaraFunctionLibrary::SpawnSystemAttached(
-				FlashlightHitVFX, GetMesh(), NAME_None,
-				HitLocation, HitNormal.Rotation(),
-				EAttachLocation::KeepWorldPosition, true);
-		}
-		else
-		{
-			ActiveFlashlightVFX->SetWorldLocationAndRotation(HitLocation, HitNormal.Rotation());
+					FlashlightHitVFX,
+					GetMesh(),
+					TargetSocket,
+					FVector::ZeroVector,
+					FRotator::ZeroRotator,
+					EAttachLocation::SnapToTarget,
+					/*bAutoDestroy=*/ true
+				);
 		}
 
 		GetWorldTimerManager().SetTimer(FlashlightVFXStopTimer, this, &ATakenBase::StopFlashlightVFX, 0.15f, false);
 	}
-	if (bIsFocusBeam)
+	if (bIsFocusBeam && !DarknessShieldComponent->bIsVulnerable)
 	{
+		bIsBeingFocused = true;
 		GetCharacterMovement()->MaxWalkSpeed = FocusedWalkSpeed;
 		GetWorldTimerManager().SetTimer(SpeedResetTimer, this, &ATakenBase::ResetSpeed, 0.25f,  false);
-		bIsBeingFocused = true;
 		if (!bHasFlinched)
 		{
 			bHasFlinched = true;
 			BP_OnFocusFlinch();
 		}
+		BP_OnFlashlightHit(HitLocation, ExposureValue, bIsFocusBeam);
 	}
 }
 
@@ -125,6 +139,7 @@ void ATakenBase::StopFlashlightVFX()
 		ActiveFlashlightVFX->Deactivate();
 		ActiveFlashlightVFX = nullptr;
 	}
+	BP_OnFlashlightStopped();
 }
 
 void ATakenBase::ResetSpeed()

@@ -10,6 +10,7 @@
 class UDarknessShield;
 class UNiagaraSystem;
 class UNiagaraComponent;
+class UMotionWarpingComponent;
 
 UCLASS()
 class ALANWAKESLICE_API ATakenBase : public ACharacter, public IFlashlightAffected
@@ -25,6 +26,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TakenBase")
 	UStaticMeshComponent* MeleeWeaponMesh;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TakenBase")
+	UMotionWarpingComponent* MotionWarpingComponent;
 	
 
 	UFUNCTION()

@@ -2,7 +2,6 @@
 
 
 #include "Enemy/TakenBase.h"
-
 #include "AudioMixer.h"
 #include "TimerManager.h"
 #include "AI/TakenAIController.h"
@@ -19,6 +18,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/DamageType.h"
 #include "Kismet/GameplayStatics.h"
+#include "MotionWarpingComponent.h"
+
 
 ATakenBase::ATakenBase()
 {
@@ -31,7 +32,7 @@ ATakenBase::ATakenBase()
 	MeleeWeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	MeleeWeaponMesh->SetupAttachment(GetMesh(), TEXT("MeleeSocket"));
 	
-	
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 	
 }
 

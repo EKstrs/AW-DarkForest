@@ -22,6 +22,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TakenBase")
 	UDarknessShield* DarknessShieldComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TakenBase")
+	UStaticMeshComponent* MeleeWeaponMesh;
 	
 
 	UFUNCTION()
@@ -41,11 +44,59 @@ public:
 	UNiagaraSystem* FlashlightHitVFX;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VFX")
-    UNiagaraSystem* ShieldBreakVFX;  
-    	
+    UNiagaraSystem* ShieldBreakVFX;
+
+
+	// Hit Reaction State
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|Reactions")
+	FName ReactionBoneName;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|Reactions")
+	FVector ImpactDirection;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|Reactions")
+	float ReactionAlpha;
+
+	bool bIsFlinching = false;
+
+	FName ResolveReactionBone(FName HitBone);
+
+	void ProcessHit(FName HitBone, FVector HitDirection, FVector HitLocation);
+
+
+	UFUNCTION(BlueprintCallable, Category = "AI System")
+	void TriggerDespawn();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Attack")
+	void BP_Attack();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attack")
+	float AttackDamage = 15.f;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Attack")
+	bool bIsAttacking = false;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Attack")
+	bool bMeleeTraceActive = false;
+
+	void PerformMeleeAttack();
+
+	void StartMeleeTrace();
+	void PerformMeleeTrace();
+	void EndMeleeTrace();
+	
+	TArray<AActor*> HitActorsThisSwing;
+	FVector LastTraceStart;
+	FVector LastTraceEnd;
+
 protected:
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type reason) override;
+	virtual void Tick(float DeltaTime) override;
+
+	
+	USceneComponent* GetTraceData(FName& OutStartSocket, FName& OutEndSocket);
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Health")
 	float MaxHealth = 100.f;
@@ -66,6 +117,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "VFX")
 	void BP_OnDeath();
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "VFX")
+	void BP_OnDespawn();
+
 	UPROPERTY()
 	UNiagaraComponent* ActiveFlashlightVFX;
 
@@ -78,6 +132,8 @@ protected:
 	void BP_OnFlashlightStopped();
 	
 	void StopFlashlightVFX();
+
+
 private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "TakenBase", meta = (AllowPrivateAccess = "true"))
@@ -96,3 +152,7 @@ private:
 
 	float LastShieldBurnVFXTime = -1.f;
 };
+
+
+
+

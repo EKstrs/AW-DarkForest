@@ -55,7 +55,7 @@ bool UWeaponComponent::Fire(FVector MuzzleLocation, FVector AimDirection)
 					DamageToApply *= 0.5f;
 				}
 
-				UGameplayStatics::ApplyDamage(Hit.GetActor(), DamageToApply, nullptr, GetOwner(), UDamageType::StaticClass());
+				UGameplayStatics::ApplyPointDamage(Hit.GetActor(), DamageToApply, AimDirection, Hit, nullptr, GetOwner(), UDamageType::StaticClass());
 			}
 		}
 		OnWeaponFiredDelegate.Broadcast(Hit.bBlockingHit, Hit.GetActor(), Hit.ImpactPoint, Hit.ImpactNormal);

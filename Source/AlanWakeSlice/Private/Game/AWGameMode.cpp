@@ -4,6 +4,7 @@
 #include "Game/AWGameMode.h"
 
 #include "Character/AlanWakeCharacter.h"
+#include "Enemy/TakenBase.h"
 
 void AAWGameMode::PlayerDied(AAlanWakeCharacter* DeadPlayer)
 {
@@ -18,5 +19,29 @@ void AAWGameMode::RespawnFromCheckpoint(AAlanWakeCharacter* PlayerToRespawn)
 	if (PlayerToRespawn)
 	{
 		PlayerToRespawn->LoadPlayerState();
+	}
+}
+
+void AAWGameMode::RegisterActiveEnemy(ATakenBase* Enemy)
+{
+	ActiveEnemies.AddUnique(Enemy);
+}
+
+void AAWGameMode::UnregisterEnemy(ATakenBase* Enemy)
+{
+	ActiveEnemies.Remove(Enemy);
+}
+
+void AAWGameMode::DespawnEnemies()
+{
+	TArray<ATakenBase*> Enemies =  ActiveEnemies;
+	ActiveEnemies.Empty();
+
+	for (ATakenBase* Enemy: Enemies)
+	{
+		if (IsValid(Enemy))
+		{
+			Enemy->TriggerDespawn();
+		}
 	}
 }

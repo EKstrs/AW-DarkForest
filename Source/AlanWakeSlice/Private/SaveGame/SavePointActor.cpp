@@ -8,6 +8,8 @@
 #include "Components/InventoryComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/World.h"
+#include "Game/AWGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "SaveGame/AWSaveGame.h"
 
@@ -40,16 +42,16 @@ void ASavePointActor::BeginPlay()
 void ASavePointActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// If we already saved here, ignore it
 	if (bHasTriggered) return;
-
-	// Check if the actor that walked in is our Player
+	
 	if (AAlanWakeCharacter* Player = Cast<AAlanWakeCharacter>(OtherActor))
 	{
-		// Lock the checkpoint so it doesn't trigger again
 		bHasTriggered = true;
-
-		// Create the save game object
+		
+		if (AAWGameMode* GM = Cast<AAWGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			GM->DespawnEnemies();
+		}
 		UAWSaveGame* SaveGameInstance = Cast<UAWSaveGame>(UGameplayStatics::CreateSaveGameObject(UAWSaveGame::StaticClass()));
 		
 		if (SaveGameInstance)

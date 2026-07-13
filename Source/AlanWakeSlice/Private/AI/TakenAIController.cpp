@@ -3,6 +3,7 @@
 
 #include "AI/TakenAIController.h"
 
+#include "Enemy/TakenBase.h"
 #include "Kismet/GameplayStatics.h"
 
 ATakenAIController::ATakenAIController()
@@ -26,11 +27,14 @@ void ATakenAIController::Tick(float DeltaTime)
 		return;
 	}
 
-	MoveToActor(TargetPlayer, AttackAcceptanceRadius);
+	MoveToActor(TargetPlayer, 50.f);
 
 	if (FVector::Dist(GetPawn()->GetActorLocation(), TargetPlayer->GetActorLocation()) <= AttackAcceptanceRadius)
 	{
-		//TODO Attack player
+		if (ATakenBase* Enemy = Cast<ATakenBase>(GetPawn()))
+		{
+			Enemy->PerformMeleeAttack();
+		}
 	}
 }
 

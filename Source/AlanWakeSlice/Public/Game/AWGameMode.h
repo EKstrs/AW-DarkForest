@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "AWGameMode.generated.h"
 
+class ATakenBase;
 /**
  * 
  */
@@ -22,5 +23,17 @@ public:
 	void BP_HandleDeathSequence(AAlanWakeCharacter* DeadPlayer);
 
 	UFUNCTION(BlueprintCallable, Category = "Game Flow")
-	void RespawnFromCheckpoint(AAlanWakeCharacter* PlayerToRespawn);	
+	void RespawnFromCheckpoint(AAlanWakeCharacter* PlayerToRespawn);
+
+	UPROPERTY()
+	TArray<ATakenBase*> ActiveEnemies;
+
+	UFUNCTION()
+	void RegisterActiveEnemy(ATakenBase* Enemy);
+
+	UFUNCTION()
+	void UnregisterEnemy(ATakenBase* Enemy);
+
+	UFUNCTION()
+	void DespawnEnemies();
 };

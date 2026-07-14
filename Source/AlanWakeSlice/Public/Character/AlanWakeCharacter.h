@@ -42,7 +42,7 @@ class AAlanWakeCharacter : public ACharacter
 public:
 	AAlanWakeCharacter();
 
-	/** Pickups system */
+	/** Interaction system */
 	void RegisterInteractable(AActor* InteractableActor);
 	void UnregisterInteractable(AActor* InteractableActor);
 

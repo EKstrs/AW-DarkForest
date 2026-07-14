@@ -24,7 +24,7 @@
 		},
 		{
 			"Name": "MotionWarping",
-    			"Enabled": true
+			"Enabled": true
 		}
 	]
 }

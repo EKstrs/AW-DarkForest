@@ -51,25 +51,26 @@ void ASavePointActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor
 		if (AAWGameMode* GM = Cast<AAWGameMode>(GetWorld()->GetAuthGameMode()))
 		{
 			GM->DespawnEnemies();
-		}
-		UAWSaveGame* SaveGameInstance = Cast<UAWSaveGame>(UGameplayStatics::CreateSaveGameObject(UAWSaveGame::StaticClass()));
-		
-		if (SaveGameInstance)
-		{
-			// Populate the data from the player
-			SaveGameInstance->PlayerLocation = Player->GetActorLocation();
-			SaveGameInstance->PlayerRotation = Player->GetActorRotation();
-			SaveGameInstance->BatteryLevel = Player->FlashlightComp->GetBatteryLevel();
-			SaveGameInstance->RevolverMag = Player->InventoryComp->GetRevolverMag();
-			SaveGameInstance->RevolverReserve =  Player->InventoryComp->GetRevolverReserve();
-			SaveGameInstance->FlareGunAmmo = Player->InventoryComp->GetFlareGunAmmo();
-			SaveGameInstance->FlareCount = Player->InventoryComp->GetFlareCount();
-			SaveGameInstance->PlayerHealth = Player->GetHealth();
+			UAWSaveGame* SaveGameInstance = Cast<UAWSaveGame>(UGameplayStatics::CreateSaveGameObject(UAWSaveGame::StaticClass()));
 			
-			UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveSlotName, 0);
-			
-			BP_OnCheckpointReached();
-		}
+			if (SaveGameInstance)
+			{
+				// Populate the data from the player
+				SaveGameInstance->PlayerLocation = Player->GetActorLocation();
+				SaveGameInstance->PlayerRotation = Player->GetActorRotation();
+				SaveGameInstance->BatteryLevel = Player->FlashlightComp->GetBatteryLevel();
+				SaveGameInstance->RevolverMag = Player->InventoryComp->GetRevolverMag();
+				SaveGameInstance->RevolverReserve =  Player->InventoryComp->GetRevolverReserve();
+				SaveGameInstance->FlareGunAmmo = Player->InventoryComp->GetFlareGunAmmo();
+				SaveGameInstance->FlareCount = Player->InventoryComp->GetFlareCount();
+				SaveGameInstance->PlayerHealth = Player->GetHealth();
+				SaveGameInstance->CurrentBeat = GM->CurrentBeat;
+				
+				UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveSlotName, 0);
+				
+				BP_OnCheckpointReached();
+			}
+		}	
 	}
 }
 

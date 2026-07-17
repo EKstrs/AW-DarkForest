@@ -6,6 +6,16 @@
 #include "Character/AlanWakeCharacter.h"
 #include "Enemy/TakenBase.h"
 
+void AAWGameMode::AdvanceStoryBeat(EStoryBeat NewBeat)
+{
+	if ((uint8)NewBeat <= (uint8)CurrentBeat)
+	{
+		return;
+	}
+	CurrentBeat = NewBeat;
+	OnStoryBeatChanged.Broadcast(CurrentBeat);
+}
+
 void AAWGameMode::PlayerDied(AAlanWakeCharacter* DeadPlayer)
 {
 	if (DeadPlayer)

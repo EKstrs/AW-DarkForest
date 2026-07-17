@@ -14,4 +14,5 @@ UAWSaveGame::UAWSaveGame()
 	FlareCount = 0;
 	BatteryLevel = 1.0f;
 	PlayerHealth = 100.0f;
+	CurrentBeat = EStoryBeat::None;
 }

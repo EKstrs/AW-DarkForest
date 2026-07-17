@@ -202,6 +202,12 @@ void AAlanWakeCharacter::LoadPlayerState()
 			CurrentHealth = LoadedGame->PlayerHealth;
 			OnHealthChangedDelegate.Broadcast(CurrentHealth);
 			bIsDead = false;
+
+			if (AAWGameMode* GM = Cast<AAWGameMode>(GetWorld()->GetAuthGameMode()))
+			{
+				GM->CurrentBeat = LoadedGame->CurrentBeat;
+				GM->OnStoryBeatChanged.Broadcast(GM->CurrentBeat);
+			}
 			
 			if (InventoryComp)
 			{

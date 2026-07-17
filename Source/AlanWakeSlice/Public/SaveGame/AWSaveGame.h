@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Game/AWGameMode.h"
 #include "GameFramework/SaveGame.h"
 #include "AWSaveGame.generated.h"
 
+enum class EStoryBeat : uint8;
 /**
  * 
  */
@@ -46,5 +48,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SaveData")
 	TArray<FName> CollectedPickupIDs;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SaveData")
+	EStoryBeat CurrentBeat;
 	
 };
